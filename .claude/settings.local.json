@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:javascript.plainenglish.io)",
+      "WebFetch(domain:github.com)",
+      "Bash(ls:*)",
+      "Bash(# Search for key WhatsApp automation patterns in content.js strings \"\"/c/Users/Administrator/Desktop/new whatsApp/heogilejknffekkbjdjmoamaehdblmnc/1.0.72_1/content.js\"\")",
+      "Bash(python3:*)",
+      "Bash(EXT_PATH=\"/c/Users/Administrator/Desktop/new whatsApp/heogilejknffekkbjdjmoamaehdblmnc/1.0.72_1\")",
+      "Bash(node -e:*)",
+      "Bash(WINPATH=\"C:\\\\Users\\\\Administrator\\\\Desktop\\\\new whatsApp\\\\heogilejknffekkbjdjmoamaehdblmnc\\\\1.0.72_1\\\\content.js\")",
+      "Bash(# Try using grep directly on the actual shell path which works grep -oP \"\"querySelector[^\\\\\"\"'']{0,100}\"\" \"\"/c/Users/Administrator/Desktop/new whatsApp/heogilejknffekkbjdjmoamaehdblmnc/1.0.72_1/content.js\"\")",
+      "Bash(EXT=\"/c/Users/Administrator/Desktop/new whatsApp/heogilejknffekkbjdjmoamaehdblmnc/1.0.72_1\" echo \"=== fl.js patterns ===\" grep -oP \"querySelector[^\"\"'']{0,100}\" \"$EXT/fl.js\")",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(start create-icons.html)",
+      "Bash(powershell -Command \"\nWrite-Host ''Looking for icon files in Downloads...''\n$downloads = [Environment]::GetFolderPath\\(''UserProfile''\\) + ''\\\\Downloads''\n$icons = @\\(''icon16.png'', ''icon48.png'', ''icon128.png''\\)\n$target = ''C:\\\\Users\\\\Administrator\\\\Desktop\\\\new whatsApp\\\\whatsapp-bulk-sender\\\\icons\\\\''\n\nforeach \\($icon in $icons\\) {\n    $source = Join-Path $downloads $icon\n    if \\(Test-Path $source\\) {\n        Copy-Item -Path $source -Destination $target -Force\n        Write-Host \"\"✓ Moved $icon\"\"\n    } else {\n        Write-Host \"\"✗ Not found: $icon\"\"\n    }\n}\n\nWrite-Host ''''\nWrite-Host ''Checking icons folder:''\nGet-ChildItem $target | Select-Object Name, Length\n\")",
+      "Bash(start chrome://extensions/)",
+      "Bash(netstat:*)",
+      "Bash(grep:*)",
+      "Bash(\"C:/Users/Administrator/Desktop/new whatsApp/super-admin/assets/css/admin-styles.css\":*)",
+      "WebFetch(domain:wasender.com)",
+      "Bash(\"C:/Users/Administrator/Desktop/new whatsApp/TESTING_START_HERE.txt\":*)",
+      "Bash(\"C:/Users/Administrator/Desktop/new whatsApp/FRONTEND_TODO_SUMMARY.txt\":*)",
+      "Bash(npm test:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 5 npm run dev)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(find:*)",
+      "Bash(supabase functions:*)",
+      "Bash(where supabase:*)",
+      "Bash(npx supabase:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git:*)"
+    ]
+  }
+}

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Bulk Sender</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Auth Screen (shown when not authenticated) -->
+    <div id="authScreen" class="auth-screen" style="display: flex;">
+      <div class="auth-logo">📱</div>
+      <h2 class="auth-title">WhatsApp Bulk Sender</h2>
+      <p class="auth-subtitle">Sign up or login to get started</p>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="signupTab">Sign Up</button>
+        <button class="auth-tab" id="loginTab">Login</button>
+      </div>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signupForm">
+        <div class="auth-form-group">
+          <label class="auth-form-label">Email</label>
+          <input
+            type="email"
+            class="auth-form-input"
+            id="signupEmail"
+            placeholder="your@email.com"
+            required
+          >
+          <div class="auth-form-error" id="signupEmailError"></div>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-form-label">Phone Number</label>
+          <input
+            type="tel"
+            class="auth-form-input"
+            id="signupPhone"
+            placeholder="1234567890"
+            required
+          >
+          <div class="auth-form-hint">Include country code (e.g., 919876543210)</div>
+          <div class="auth-form-error" id="signupPhoneError"></div>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-form-label">Password</label>
+          <input
+            type="password"
+            class="auth-form-input"
+            id="signupPassword"
+            placeholder="••••••••"
+            required
+          >
+          <div class="auth-form-hint">Minimum 6 characters</div>
+          <div class="auth-form-error" id="signupPasswordError"></div>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-form-label">Company Name</label>
+          <input
+            type="text"
+            class="auth-form-input"
+            id="signupCompany"
+            placeholder="Your Company"
+            required
+          >
+          <div class="auth-form-error" id="signupCompanyError"></div>
+        </div>
+
+        <button type="submit" class="auth-btn" id="signupBtn">
+          <span>🚀</span>
+          <span>Create Account</span>
+        </button>
+      </form>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="loginForm" style="display: none;">
+        <div class="auth-form-group">
+          <label class="auth-form-label">Email</label>
+          <input
+            type="email"
+            class="auth-form-input"
+            id="loginEmail"
+            placeholder="your@email.com"
+            required
+          >
+          <div class="auth-form-error" id="loginEmailError"></div>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-form-label">Password</label>
+          <input
+            type="password"
+            class="auth-form-input"
+            id="loginPassword"
+            placeholder="••••••••"
+            required
+          >
+          <div class="auth-form-error" id="loginPasswordError"></div>
+        </div>
+
+        <button type="submit" class="auth-btn" id="loginBtn">
+          <span>✅</span>
+          <span>Login</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Blocking Screen (shown when WhatsApp not connected) -->
+    <div id="blockingScreen" class="blocking-screen" style="display: none;">
+      <div class="blocking-content">
+        <div class="blocking-icon">⚠️</div>
+        <h2>WhatsApp Web Required</h2>
+        <p class="blocking-message" id="blockingMessage">
+          WhatsApp Web is not open or not logged in.
+        </p>
+        <div class="blocking-steps">
+          <div class="step">
+            <span class="step-number">1</span>
+            <span class="step-text">Open WhatsApp Web</span>
+          </div>
+          <div class="step">
+            <span class="step-number">2</span>
+            <span class="step-text">Scan QR code to log in</span>
+          </div>
+          <div class="step">
+            <span class="step-number">3</span>
+            <span class="step-text">Extension will auto-connect</span>
+          </div>
+        </div>
+        <button id="openWhatsAppBtn" class="btn btn-primary">
+          🚀 Open WhatsApp Web
+        </button>
+        <div id="connectingLoader" style="display:none; text-align:center; margin-top:16px;">
+          <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1s linear infinite;">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#e0e0e0" stroke-width="4"/>
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#25D366" stroke-width="4" stroke-linecap="round" stroke-dasharray="90 150" stroke-dashoffset="0" style="animation:dash 1.2s ease-in-out infinite;"/>
+          </svg>
+          <p id="connectingText" style="margin-top:8px; color:#888; font-size:13px;">Connecting to WhatsApp Web...</p>
+        </div>
+        <style>
+          @keyframes spin { 100% { transform: rotate(360deg); } }
+          @keyframes dash { 0% { stroke-dashoffset: 90; } 50% { stroke-dashoffset: -30; } 100% { stroke-dashoffset: 90; } }
+        </style>
+        <div class="blocking-hint">
+          <small>Tip: Keep the WhatsApp Web tab open while using this extension</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content (hidden until connected) -->
+    <div id="mainContent" style="display: none;">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-top">
+          <div class="header-title">
+            <span class="header-icon">📱</span>
+            <h1>WhatsApp Bulk Sender</h1>
+          </div>
+          <div class="header-actions">
+            <!-- Hard Refresh Button -->
+            <button type="button" class="header-icon-btn" id="hardRefreshBtn" title="Refresh stats">
+              <svg id="refreshIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+            </button>
+
+            <a href="#" id="settingsBtn" class="header-icon-btn" title="Settings">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </a>
+
+            <!-- Profile Button -->
+            <div class="profile-wrapper">
+              <button type="button" class="header-icon-btn" id="profileBtn" title="Profile">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </button>
+              <div class="profile-dropdown" id="profileDropdown">
+                <!-- Account -->
+                <div class="profile-section-title">Account</div>
+                <div class="profile-item">
+                  <span class="profile-item-label">Company</span>
+                  <span class="profile-item-value profile-company-value" id="profileCompany" title="Click to edit">--</span>
+                  <input type="text" class="profile-company-input" id="profileCompanyInput" maxlength="255" style="display:none;">
+                </div>
+                <div class="profile-item">
+                  <span class="profile-item-label">Email</span>
+                  <span class="profile-item-value" id="profileEmail">--</span>
+                </div>
+                <div class="profile-item">
+                  <span class="profile-item-label">Phone</span>
+                  <span class="profile-item-value" id="profilePhone">--</span>
+                </div>
+                <div class="profile-item">
+                  <span class="profile-item-label">Plan</span>
+                  <div class="profile-item-right">
+                    <span class="profile-item-value" id="profilePlan">Free plan</span>
+                    <span class="profile-plan-badge" id="profilePlanBadge">Free</span>
+                  </div>
+                </div>
+                <div class="profile-item">
+                  <span class="profile-item-label">Messages today</span>
+                  <span class="profile-item-value" id="profileMsgs">0 / 10 used</span>
+                </div>
+                <div class="profile-item">
+                  <span class="profile-item-label">Media Upload</span>
+                  <span class="profile-item-value" id="profileMedia">--</span>
+                </div>
+                <!-- Session -->
+                <div class="profile-divider"></div>
+                <div class="profile-section-title">Session</div>
+                <div class="profile-logout-row">
+                  <div>
+                    <div class="profile-item-label">Logout</div>
+                    <div class="profile-item-desc">Sign out of your account</div>
+                  </div>
+                  <button type="button" class="profile-logout-btn" id="profileLogoutBtn">Logout</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="connection-badge">
+          <div class="indicator-dot" id="statusDot"></div>
+          <span id="statusText">Checking connection...</span>
+        </div>
+
+      </div>
+
+    <!-- Tab Switcher -->
+    <div class="tab-switcher">
+      <button type="button" class="tab-btn active" id="mainTabBtn">Main</button>
+      <button type="button" class="tab-btn" id="progressTabBtn">Progress</button>
+    </div>
+
+    <!-- Main Tab -->
+    <div id="mainTab">
+
+      <!-- Phone Numbers Section -->
+      <div class="section">
+        <div class="section-header">
+          <div class="nums-header-left">
+            <span class="section-label-text">Numbers</span>
+            <span class="number-badge" id="numberCount">0</span>
+          </div>
+          <div class="nums-header-right">
+            <label for="importFile" class="upload-excel-btn">Upload Excel</label>
+            <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt" style="display:none">
+            <button class="help-icon-btn" title="Enter numbers with country code, one per line">?</button>
+          </div>
+        </div>
+        <div class="number-input-group">
+          <div class="country-picker-wrapper">
+            <button type="button" class="country-code-selector" id="countryPickerBtn">
+              <span id="selectedFlag">🇮🇳</span>
+              <span id="selectedDialCode">+91</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="pickerArrow"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="country-dropdown" id="countryDropdown">
+              <div class="country-search-wrap">
+                <input type="text" id="countrySearch" class="country-search-input" placeholder="Search country or code...">
+              </div>
+              <div class="country-list" id="countryList"></div>
+            </div>
+          </div>
+          <div class="phone-chips-container">
+            <div class="chips-list" id="chipsList"></div>
+            <input
+              type="text"
+              id="phoneNumberInput"
+              class="phone-input-field"
+              placeholder="Add More Numbers"
+              autocomplete="off"
+            >
+          </div>
+          <!-- Hidden textarea to maintain compatibility with existing parsePhoneNumbers logic -->
+          <textarea
+            id="phoneNumbers"
+            style="display:none;"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Message Section -->
+      <div class="section">
+        <div class="section-header">
+          <label for="message" class="section-label">
+            <span class="label-icon">💬</span>
+            <span class="label-text">Message</span>
+          </label>
+          <span class="char-badge" id="charCount">0 / 4096</span>
+        </div>
+        <textarea
+          id="message"
+          class="input-field message-field"
+          placeholder="Type your message here..."
+          rows="4"
+        ></textarea>
+
+        <!-- Formatting Toolbar -->
+        <div class="formatting-toolbar">
+          <button type="button" class="toolbar-btn" id="emojiBtn" title="Add emoji">
+            <span>😊</span>
+          </button>
+          <button type="button" class="toolbar-btn" id="boldBtn" title="Bold selected text">
+            <span>B</span>
+          </button>
+          <button type="button" class="toolbar-btn" id="mediaBtn" title="Attach media (image, PDF, video)">
+            <span>📎</span>
+          </button>
+          <input type="file" id="mediaInput" style="display:none;" accept="image/*,.pdf,video/*">
+        </div>
+
+        <!-- Media Display (separate from message) -->
+        <div id="mediaDisplay" class="media-display" style="display:none;">
+          <div class="media-label">📎 Attached:</div>
+          <div class="media-file">
+            <span id="mediaFileName"></span>
+            <button type="button" class="media-remove-btn" id="mediaRemoveBtn" title="Remove">×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button id="startBtn" class="btn btn-primary" disabled>
+          <span>🚀</span> Start Sending
+        </button>
+        <button id="clearBtn" class="btn btn-secondary">
+          <span>🗑️</span> Clear
+        </button>
+      </div>
+
+    </div>
+    <!-- End Main Tab -->
+
+    <!-- Progress Tab -->
+    <div id="progressTab" style="display: none;">
+
+      <!-- Empty State (shown when not sending) -->
+      <div class="progress-empty" id="progressEmpty">
+        <div class="progress-empty-icon">📊</div>
+        <div class="progress-empty-title">No active session</div>
+        <div class="progress-empty-desc">Start sending to see progress here</div>
+      </div>
+
+      <!-- Progress Section (shown when sending) -->
+      <div class="progress-section" id="progressSection" style="display: none;">
+        <div class="progress-header">
+          <strong>📊 Sending Progress</strong>
+          <div style="display:flex; gap:6px;">
+            <button id="pauseBtn" class="icon-btn">⏸ Pause</button>
+            <button id="stopBtn" class="icon-btn stop-btn">⏹ Stop</button>
+          </div>
+        </div>
+        <div class="progress-stats">
+          <div class="stat-pill sent">✅ <strong id="sentCount">0</strong> Sent</div>
+          <div class="stat-pill failed">❌ <strong id="failedCount">0</strong> Failed</div>
+          <div class="stat-pill total">📋 <strong id="totalCount">0</strong> Total</div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="countdown" id="countdown">Next in: <strong>--</strong></div>
+      </div>
+
+      <!-- Message Log -->
+      <div class="msg-log" id="msgLog" style="display:none;">
+        <div class="msg-log-header">
+          <span class="log-col-num">Phone Number</span>
+          <span class="log-col-status">Status</span>
+        </div>
+        <div class="msg-log-body" id="msgLogBody"></div>
+      </div>
+
+    </div>
+    <!-- End Progress Tab -->
+
+    <!-- Emoji Picker Modal -->
+    <div id="emojiModal" class="emoji-modal" style="display:none;">
+      <div class="emoji-modal-content">
+        <div class="emoji-modal-header">
+          <span>Choose Emoji</span>
+          <button type="button" class="emoji-modal-close" id="emojiModalClose">×</button>
+        </div>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
+    </div>
+
+    <!-- Subscription Block Modal -->
+    <div id="subscriptionBlockModal" class="subscription-block-modal" style="display:none;">
+      <div class="subscription-block-content">
+        <div class="subscription-block-icon">🔒</div>
+        <h3>Subscribe to use this feature</h3>
+        <p id="subscriptionBlockMessage">This feature is only available in premium plans.</p>
+        <div class="subscription-block-actions">
+          <button type="button" class="btn btn-primary" id="upgradeBtn">Upgrade Plan</button>
+          <button type="button" class="btn btn-secondary" id="closeBlockBtn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Message (shared) -->
+    <div id="statusMessage" class="status-message"></div>
+
+      <!-- Footer -->
+      <div class="footer">
+        🔒 100% Private &nbsp;•&nbsp; No data leaves your browser
+      </div>
+    </div>
+    <!-- End Main Content -->
+
+    <!-- Settings Page -->
+    <div id="settingsPage" style="display: none;">
+      <!-- Settings Header -->
+      <div class="settings-page-header">
+        <a href="#" id="settingsBackBtn" class="settings-back-btn" title="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </a>
+        <h2 class="settings-page-title">Settings</h2>
+      </div>
+
+      <!-- Sending Settings -->
+      <div class="settings-group">
+        <div class="settings-group-title">Sending</div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="settings-item-label">Delay between messages</span>
+            <span class="settings-item-desc">Minimum 8 seconds to avoid bans</span>
+          </div>
+          <div class="settings-item-control">
+            <input
+              type="number"
+              id="delaySec"
+              min="8"
+              max="120"
+              value="10"
+              class="delay-input"
+            >
+            <span class="settings-unit">sec</span>
+          </div>
+        </div>
+
+        <div id="delayWarning" class="warning-box" style="display: none;">
+          ⚠️ Delay below 10 seconds may increase ban risk!
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="settings-item-label">Randomize delay</span>
+            <span class="settings-item-desc">Adds ±2 seconds variation for safety</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="randomizeDelay" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+
+      <!-- Danger Zone -->
+      <div class="settings-group">
+        <div class="settings-group-title">Session</div>
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="settings-item-label">Logout</span>
+            <span class="settings-item-desc">Sign out of your account</span>
+          </div>
+          <button id="settingsLogoutBtn" class="settings-danger-btn">Logout</button>
+        </div>
+      </div>
+
+      <div class="settings-footer">v1.0.0 &nbsp;•&nbsp; 🔒 100% Private</div>
+    </div>
+    <!-- End Settings Page -->
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="media-manager.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

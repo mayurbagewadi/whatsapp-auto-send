@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Icons for Extension</title>
+</head>
+<body>
+  <h1>Creating Icons...</h1>
+  <p id="status">Please wait...</p>
+
+  <script>
+    // Create canvas-based PNG icons
+    async function createIcons() {
+      const sizes = [16, 48, 128];
+
+      for (const size of sizes) {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        // Draw green background (WhatsApp color)
+        ctx.fillStyle = '#25D366';
+        ctx.fillRect(0, 0, size, size);
+
+        // Draw white "W" text
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${Math.floor(size * 0.6)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('W', size / 2, size / 2);
+
+        // Convert to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+        // Download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `icon${size}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      document.getElementById('status').innerHTML =
+        '<strong style="color: green;">✅ Done!</strong><br><br>' +
+        'Downloaded 3 files:<br>' +
+        '- icon16.png<br>' +
+        '- icon48.png<br>' +
+        '- icon128.png<br><br>' +
+        '<strong>Next steps:</strong><br>' +
+        '1. Move these 3 files to the <code>icons/</code> folder<br>' +
+        '2. Go to chrome://extensions/<br>' +
+        '3. Click "Load unpacked"<br>' +
+        '4. Select the whatsapp-bulk-sender folder';
+    }
+
+    // Auto-run
+    createIcons();
+  </script>
+</body>
+</html>

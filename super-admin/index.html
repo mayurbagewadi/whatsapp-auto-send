@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>WhatsApp Bulk Sender - Admin Panel</title>
+  <link rel="stylesheet" href="assets/css/admin-styles.css">
+  <!-- Chart.js for analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="loginPage" class="page active">
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-logo">W</div>
+        <h1>Admin Panel</h1>
+        <p class="login-subtitle">WhatsApp Bulk Sender Management</p>
+
+        <form id="loginForm" class="login-form">
+          <div class="form-group">
+            <label for="email">Admin Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="admin@example.com"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Sign In
+          </button>
+        </form>
+
+        <div id="loginError" class="error-message" style="display: none;"></div>
+
+        <div class="login-footer">
+          <p class="text-muted">🔒 Local access only - Secure admin operations</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</div>
+
+  <!-- Main Dashboard Page -->
+  <div id="dashboardPage" class="page">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">W</div>
+        <div class="header-title">ADMIN PANEL</div>
+      </div>
+      <div class="header-right">
+        <div class="session-info">
+          <span class="session-time" id="sessionTime">Session: 8h remaining</span>
+        </div>
+        <button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button>
+        <button class="icon-btn" id="logoutBtn" title="Logout">🚪</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="dashboard" role="tab">📊 Dashboard</button>
+      <button class="nav-tab" data-tab="analytics" role="tab">📈 Analytics</button>
+      <button class="nav-tab" data-tab="users" role="tab">👥 Users</button>
+      <button class="nav-tab" data-tab="subscriptions" role="tab">💳 Subscriptions</button>
+      <button class="nav-tab" data-tab="usage" role="tab">📋 Usage</button>
+      <button class="nav-tab" data-tab="audit" role="tab">🔍 Audit</button>
+      <button class="nav-tab" data-tab="selectors" role="tab">🔧 Selectors</button>
+      <button class="nav-tab" data-tab="message-logs" role="tab">📨 Message Logs</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Dashboard Tab -->
+      <div id="dashboard" class="tab-pane active">
+        <div class="page-header">
+          <h2>Dashboard</h2>
+          <p class="text-muted">Admin overview and key metrics</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <div class="stat-label">Total Users</div>
+              <div class="stat-value" id="totalUsers">-</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">✓</div>
+            <div class="stat-info">
+              <div class="stat-label">Active Users</div>
+              <div class="stat-value" id="activeUsers">-</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">⏸️</div>
+            <div class="stat-info">
+              <div class="stat-label">Suspended</div>
+              <div class="stat-value" id="suspendedUsers">-</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">💳</div>
+            <div class="stat-info">
+              <div class="stat-label">Active Subscriptions</div>
+              <div class="stat-value" id="activeSubscriptions">-</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+              <div class="stat-label">Monthly Revenue</div>
+              <div class="stat-value" id="monthlyRevenue">-</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">💬</div>
+            <div class="stat-info">
+              <div class="stat-label">Messages Sent</div>
+              <div class="stat-value" id="totalMessages">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section">
+          <h3>Quick Actions</h3>
+          <div class="button-group">
+            <button class="btn btn-primary" onclick="switchTab('users')">
+              ➕ Create User
+            </button>
+            <button class="btn btn-secondary" onclick="switchTab('subscriptions')">
+              💳 Manage Plans
+            </button>
+            <button class="btn btn-secondary" onclick="switchTab('usage')">
+              📊 View Usage
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section">
+          <h3>Recent Audit Activity</h3>
+          <div id="recentActivity" class="activity-list">
+            <p class="text-muted text-center">Loading activity...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="users" class="tab-pane">
+        <div class="page-header">
+          <h2>User Management</h2>
+          <button class="btn btn-primary" id="createUserBtn">➕ Create User</button>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="filters-bar">
+          <input
+            type="text"
+            id="userSearch"
+            placeholder="Search by email or name..."
+            class="search-input"
+          />
+          <select id="userStatusFilter" class="select-input">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-container">
+          <table id="usersTable" class="data-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="6" class="text-center text-muted">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="usersPagination" style="display: none;">
+          <button class="btn btn-sm" id="prevPage">← Previous</button>
+          <span id="pageInfo"></span>
+          <button class="btn btn-sm" id="nextPage">Next →</button>
+        </div>
+      </div>
+
+      <!-- Subscriptions Tab -->
+      <div id="subscriptions" class="tab-pane">
+        <div class="page-header">
+          <h2>Subscription Management</h2>
+          <button class="btn btn-primary" id="createPlanBtn">➕ Create Plan</button>
+        </div>
+
+        <!-- Subscription Plans -->
+        <div class="plans-grid" id="plansGrid">
+          <p class="text-muted text-center">Loading subscription plans...</p>
+        </div>
+
+        <!-- Active Subscriptions -->
+        <div class="section" style="margin-top: 40px;">
+          <h3>Active Subscriptions</h3>
+          <div class="filters-bar">
+            <input
+              type="text"
+              id="subSearch"
+              placeholder="Search by user email..."
+              class="search-input"
+            />
+            <select id="subPlanFilter" class="select-input">
+              <option value="">All Plans</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table id="subscriptionsTable" class="data-table">
+              <thead>
+                <tr>
+                  <th>User Email</th>
+                  <th>Plan</th>
+                  <th>Billing Cycle</th>
+                  <th>Amount</th>
+                  <th>Period Start</th>
+                  <th>Period End</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="subscriptionsTableBody">
+                <tr><td colspan="8" class="text-center text-muted">Loading subscriptions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage Tab -->
+      <div id="usage" class="tab-pane">
+        <div class="page-header">
+          <h2>Usage Tracking</h2>
+          <div class="button-group">
+            <button class="btn btn-secondary btn-sm" id="exportCSV">📥 Export CSV</button>
+            <button class="btn btn-secondary btn-sm" id="exportJSON">📥 Export JSON</button>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filters-bar">
+          <input
+            type="text"
+            id="usageUserSearch"
+            placeholder="Search by user ID..."
+            class="search-input"
+          />
+          <input
+            type="date"
+            id="usageDate"
+            class="input-field"
+          />
+        </div>
+
+        <!-- Usage Summary -->
+        <div class="section">
+          <h3>Usage Summary</h3>
+          <div class="table-container">
+            <table id="usageTable" class="data-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Messages Sent</th>
+                  <th>Campaigns Created</th>
+                  <th>Contacts Imported</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usageTableBody">
+                <tr><td colspan="6" class="text-center text-muted">Loading usage data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div id="analytics" class="tab-pane">
+        <div class="page-header">
+          <h2>Advanced Analytics</h2>
+          <div class="button-group">
+            <input type="date" id="analyticsStartDate" class="input-field" />
+            <input type="date" id="analyticsEndDate" class="input-field" />
+            <button class="btn btn-secondary btn-sm" id="exportAnalytics">📥 Export Report</button>
+          </div>
+        </div>
+
+        <!-- Analytics Charts Grid -->
+        <div class="analytics-grid">
+          <!-- Revenue Section -->
+          <div class="analytics-card">
+            <h3>Daily Revenue (Last 30 Days)</h3>
+            <canvas id="dailyRevenueChart" height="80"></canvas>
+          </div>
+
+          <div class="analytics-card">
+            <h3>Monthly Revenue (Last 12 Months)</h3>
+            <canvas id="monthlyRevenueChart" height="80"></canvas>
+          </div>
+
+          <!-- Plan Distribution -->
+          <div class="analytics-card">
+            <h3>Users by Plan</h3>
+            <canvas id="planDistributionChart" height="80"></canvas>
+          </div>
+
+          <!-- User Growth -->
+          <div class="analytics-card">
+            <h3>User Signups (Last 30 Days)</h3>
+            <canvas id="userGrowthChart" height="80"></canvas>
+          </div>
+
+          <!-- Message Volume -->
+          <div class="analytics-card">
+            <h3>Message Volume Trend</h3>
+            <canvas id="messageVolumeChart" height="80"></canvas>
+          </div>
+
+          <!-- Revenue by Plan -->
+          <div class="analytics-card">
+            <h3>Revenue by Plan</h3>
+            <canvas id="revenueByPlanChart" height="80"></canvas>
+          </div>
+
+          <!-- Top Users -->
+          <div class="analytics-card full-width">
+            <h3>Top 10 Users by Message Volume</h3>
+            <div class="table-container">
+              <table id="topUsersTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Email</th>
+                    <th>Messages Sent</th>
+                    <th>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody id="topUsersBody">
+                  <tr><td colspan="4" class="text-center text-muted">Loading data...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Active Users Status -->
+          <div class="analytics-card">
+            <h3>User Status</h3>
+            <div id="userStatusWidget" style="padding: 20px; text-align: center;">
+              <div style="margin: 10px 0;">
+                <div style="font-size: 28px; font-weight: 700; color: #25D366;">-</div>
+                <div style="font-size: 12px; color: #999;">Active Users</div>
+              </div>
+              <div style="margin: 10px 0;">
+                <div style="font-size: 28px; font-weight: 700; color: #F44336;">-</div>
+                <div style="font-size: 12px; color: #999;">Inactive Users</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selectors Tab -->
+      <div id="selectors" class="tab-pane">
+        <div id="selectorsTabContent"></div>
+      </div>
+
+      <!-- Audit Logs Tab -->
+      <div id="audit" class="tab-pane">
+        <div class="page-header">
+          <h2>Audit Logs</h2>
+        </div>
+
+        <!-- Filter -->
+        <div class="filters-bar">
+          <input
+            type="text"
+            id="auditSearch"
+            placeholder="Search by action or user..."
+            class="search-input"
+          />
+          <select id="auditActionFilter" class="select-input">
+            <option value="">All Actions</option>
+            <option value="create_user">Create User</option>
+            <option value="update_user">Update User</option>
+            <option value="delete_user">Delete User</option>
+            <option value="suspend_user">Suspend User</option>
+            <option value="update_subscription">Update Subscription</option>
+          </select>
+        </div>
+
+        <!-- Audit Logs Table -->
+        <div class="table-container">
+          <table id="auditTable" class="data-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Admin</th>
+                <th>Action</th>
+                <th>Target User</th>
+                <th>Details</th>
+                <th>IP Address</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <tr><td colspan="6" class="text-center text-muted">Loading audit logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Message Logs Tab -->
+      <div id="message-logs" class="tab-pane">
+        <div class="page-header">
+          <h2>Message Logs</h2>
+          <p class="text-muted">All messages sent by users</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="section" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div>
+            <label style="font-size:13px;font-weight:600;margin-right:6px;">Date</label>
+            <input type="date" id="logsDatePicker" class="form-control" style="width:160px;display:inline-block;">
+          </div>
+          <span id="logsTotalCount" class="text-muted" style="font-size:13px;"></span>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button id="logsDownloadBtn" class="btn btn-secondary">⬇ Download Excel</button>
+            <button id="logsDeleteBtn" class="btn btn-danger">🗑 Delete This Day</button>
+          </div>
+        </div>
+
+        <!-- Alert message -->
+        <div id="logsMessage" class="alert" style="display:none;margin:0 0 12px;"></div>
+
+        <!-- Loading -->
+        <div id="logsLoading" class="text-center text-muted" style="padding:32px;">Loading…</div>
+
+        <!-- Table -->
+        <div class="table-container">
+          <table id="logsTable" class="data-table" style="display:none;">
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>User Email</th>
+                <th>User Phone</th>
+                <th>Recipient Phone</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div id="logsPagination" style="margin-top:16px;display:flex;justify-content:center;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modals -->
+
+  <!-- Create/Edit User Modal -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="userModalTitle">Create User</h3>
+        <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+      </div>
+      <form id="userForm" class="modal-form">
+        <div class="form-group">
+          <label for="userEmail">Email *</label>
+          <input type="email" id="userEmail" required />
+        </div>
+
+        <div class="form-group">
+          <label for="userName">Phone Number</label>
+          <input type="tel" id="userName" placeholder="919876543210" />
+        </div>
+
+        <div class="form-group">
+          <label for="userPlan">Subscription Plan *</label>
+          <select id="userPlan" required>
+            <option value="">Select a plan</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="userActive" checked />
+            Active
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('userModal')">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create/Edit Plan Modal -->
+  <div id="planModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="planModalTitle">Create Plan</h3>
+        <button class="modal-close" onclick="closeModal('planModal')">&times;</button>
+      </div>
+      <form id="planForm" class="modal-form">
+        <input type="hidden" id="planId" />
+        <div class="form-group">
+          <label for="planName">Plan Name *</label>
+          <input type="text" id="planName" required placeholder="e.g. Pro Plan" />
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div class="form-group" style="flex:1;">
+            <label for="planPriceMonthly">Monthly Price ($)</label>
+            <input type="number" id="planPriceMonthly" min="0" step="0.01" placeholder="9.99" />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label for="planPriceYearly">Yearly Price ($)</label>
+            <input type="number" id="planPriceYearly" min="0" step="0.01" placeholder="99.99" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="planUnlimited" />
+            Unlimited Messages per Day
+          </label>
+        </div>
+        <div class="form-group" id="planMsgLimitGroup">
+          <label for="planMsgLimit">Messages per Day *</label>
+          <input type="number" id="planMsgLimit" min="1" placeholder="500" />
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="planMediaUpload" />
+            📎 Allow Media Upload (Images, Videos, PDF)
+          </label>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="planActive" checked />
+            Active
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('planModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Message Logs Detail Modal -->
+  <div id="logsDetailModal" class="modal" style="display:none;"></div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { adminAuth } from './assets/js/admin-auth.js?v=7';
+    import { adminAPI } from './assets/js/admin-api-new.js?v=16';
+    import { initDashboard } from './assets/js/pages/dashboard.js?v=2';
+    import { initAnalytics } from './assets/js/pages/analytics.js';
+    import { initUsers } from './assets/js/pages/users.js?v=3';
+    import { initSubscriptions } from './assets/js/pages/subscriptions.js?v=8';
+    import { initUsage } from './assets/js/pages/usage.js?v=2';
+    import { initSelectors } from './assets/js/pages/selectors.js?v=3';
+    import { initMessageLogs } from './assets/js/pages/message-logs.js';
+
+    // Make globally available
+    window.adminAuth = adminAuth;
+    window.adminAPI = adminAPI;
+    window.initDashboard = initDashboard;
+    window.initAnalytics = initAnalytics;
+    window.initUsers = initUsers;
+    window.initSubscriptions = initSubscriptions;
+    window.initUsage = initUsage;
+    window.initSelectors = initSelectors;
+    window.initMessageLogs = initMessageLogs;
+
+    // Initialize app
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initApp();
+    });
+
+    async function initApp() {
+      // Check if already authenticated
+      if (adminAuth.isAuthenticated()) {
+        showDashboard();
+        initAllPages(adminAPI);
+        startSessionRefresh();
+
+        // Restore last tab
+        const lastTab = localStorage.getItem('admin-current-tab') || 'dashboard';
+        switchTab(lastTab);
+      } else {
+        showLogin();
+      }
+
+      // Setup event listeners
+      setupEventListeners();
+    }
+
+    function setupEventListeners() {
+      // Login form
+      document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+
+      // Logout button
+      document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+
+      // Theme toggle
+      document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+
+      // Tab navigation
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          switchTab(e.target.dataset.tab);
+        });
+      });
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('loginError');
+
+      try {
+        const result = await adminAuth.login(email, password);
+
+        if (result.success) {
+          document.getElementById('email').value = '';
+          document.getElementById('password').value = '';
+          showDashboard();
+          initAllPages(adminAPI);
+          startSessionRefresh();
+        } else {
+          errorDiv.textContent = result.message;
+          errorDiv.style.display = 'block';
+          setTimeout(() => {
+            errorDiv.style.display = 'none';
+          }, 5000);
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Login failed: ' + error.message;
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Are you sure you want to logout?')) {
+        adminAuth.logout();
+        showLogin();
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('loginPage').classList.add('active');
+      document.getElementById('dashboardPage').classList.remove('active');
+    }
+
+    function showDashboard() {
+      document.getElementById('loginPage').classList.remove('active');
+      document.getElementById('dashboardPage').classList.add('active');
+    }
+
+    function initAllPages(adminAPI) {
+      initDashboard(adminAPI);
+      initAnalytics(adminAPI);
+      initUsers(adminAPI);
+      initSubscriptions(adminAPI);
+      initUsage(adminAPI);
+      initSelectors(adminAPI);
+      initMessageLogs(adminAPI);
+    }
+
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-pane').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Deactivate all nav tabs
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+      // Save to localStorage
+      localStorage.setItem('admin-current-tab', tabName);
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('admin-theme', newTheme);
+    }
+
+    function startSessionRefresh() {
+      setInterval(() => {
+        const remaining = adminAuth.getSessionTimeRemaining();
+        if (remaining === 0) {
+          adminAuth.logout();
+          showLogin();
+          alert('Session expired. Please login again.');
+        } else {
+          const timeStr = adminAuth.getSessionExpiryTime();
+          document.getElementById('sessionTime').textContent = `Session: ${timeStr}`;
+        }
+      }, 60000); // Update every minute
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    window.switchTab = switchTab;
+    window.closeModal = closeModal;
+
+    window.showToast = function(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add('toast-show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('toast-show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    };
+  </script>
+
+  <div id="toastContainer" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
+</body>
+</html>

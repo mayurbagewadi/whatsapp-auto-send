@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WA Bulk Sender - Admin Panel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container { width: 100%; max-width: 600px; padding: 24px; }
+
+    /* ===== Login Screen ===== */
+    #loginScreen {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+
+    .admin-logo { font-size: 48px; margin-bottom: 16px; }
+    .admin-title { font-size: 24px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+    .admin-subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+
+    .login-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-size: 16px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+    .login-input:focus { border-color: #25d366; }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: #25d366;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-login:hover { background: #20ba5a; }
+
+    .login-error {
+      color: #f87171;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ===== Admin Panel ===== */
+    #adminPanel { display: none; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .panel-title { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+    .panel-badge {
+      background: #25d366;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #334155;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .selector-row { margin-bottom: 16px; }
+    .selector-row:last-child { margin-bottom: 0; }
+
+    .selector-label {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .selector-label code {
+      background: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #38bdf8;
+    }
+
+    .selector-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .selector-input:focus { border-color: #25d366; }
+
+    .input-hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Status indicator */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+    .status-dot.connected { background: #25d366; }
+    .status-dot.error { background: #f87171; }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:hover:not(:disabled) { opacity: 0.9; }
+
+    .btn-primary { background: #25d366; color: #fff; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+
+    /* Toast notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 999;
+    }
+    #toast.success { border-color: #25d366; color: #25d366; }
+    #toast.error { border-color: #f87171; color: #f87171; }
+
+    .version-tag {
+      text-align: center;
+      font-size: 11px;
+      color: #475569;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div class="container">
+    <div id="loginScreen">
+      <div class="admin-logo">🛡️</div>
+      <div class="admin-title">Admin Panel</div>
+      <div class="admin-subtitle">WhatsApp Bulk Sender — Selector Management</div>
+
+      <input type="password" class="login-input" id="adminPassword" placeholder="Enter admin password" />
+      <button class="btn-login" id="loginBtn">Login</button>
+      <div class="login-error" id="loginError">Wrong password. Try again.</div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel">
+      <div class="panel-header">
+        <div class="panel-title">🛡️ Selector Admin</div>
+        <div class="panel-badge">SUPERADMIN</div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-row">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting to Supabase...</span>
+      </div>
+
+      <!-- Selectors Card -->
+      <div class="card">
+        <div class="card-title">WhatsApp Selectors</div>
+
+        <div class="selector-row">
+          <div class="selector-label">
+            <code>SELECTOR_SEND_BUTTON</code>
+          </div>
+          <input type="text" class="selector-input" id="sel_send_button"
+            placeholder='[data-icon="send"],[data-icon="wds-ic-send-filled"]' />
+          <div class="input-hint">CSS selector for the WhatsApp send button icon</div>
+        </div>
+
+        <div class="selector-row">
+          <div class="selector-label">
+            <code>SELECTOR_ADD_ATTACHMENT_BUTTON</code>
+          </div>
+          <input type="text" class="selector-input" id="sel_attachment_button"
+            placeholder='span[data-icon="plus"],span[data-icon="plus-rounded"]' />
+          <div class="input-hint">CSS selector for the attachment (plus) button</div>
+        </div>
+
+        <div class="selector-row">
+          <div class="selector-label">
+            <code>SELECTOR_ADD_ATTACHMENT_INPUT</code>
+          </div>
+          <input type="text" class="selector-input" id="sel_attachment_input"
+            placeholder='input[type="file"]' />
+          <div class="input-hint">File input for uploading attachments</div>
+        </div>
+
+        <div class="selector-row">
+          <div class="selector-label">
+            <code>SELECTOR_APP_WA_ME_LINK</code>
+          </div>
+          <input type="text" class="selector-input" id="sel_wame_link"
+            placeholder='#app .app-wrapper-web span' />
+          <div class="input-hint">Container where wa.me link is injected</div>
+        </div>
+
+        <div class="selector-row">
+          <div class="selector-label">
+            <code>SELECTOR_APP_WA_ME_MODAL</code>
+          </div>
+          <input type="text" class="selector-input" id="sel_wame_modal"
+            placeholder='[data-animate-modal-backdrop=true]' />
+          <div class="input-hint">Modal that appears when opening a chat</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="loadBtn">↺ Load from Server</button>
+          <button class="btn btn-primary" id="saveBtn">✓ Save to Server</button>
+        </div>
+      </div>
+
+      <div class="version-tag">WA Bulk Sender Admin Panel • Changes apply to all users instantly</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
