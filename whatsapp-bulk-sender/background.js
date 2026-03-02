@@ -67,8 +67,6 @@ async function signup(email, phone, password, company_name) {
       userStats = data.user;
       await chrome.storage.local.set({ authToken: data.token, userStats: data.user, authenticated: true });
       await fetchSelectors();
-      chrome.alarms.create('statsRefresh', { periodInMinutes: 1 });
-      refreshStatsBackground();
       return { success: true, stats: data.user };
     }
 
@@ -93,8 +91,6 @@ async function login(email, password) {
       userStats = data.user;
       await chrome.storage.local.set({ authToken: data.token, userStats: data.user, authenticated: true });
       await fetchSelectors();
-      chrome.alarms.create('statsRefresh', { periodInMinutes: 1 });
-      refreshStatsBackground();
       return { success: true, stats: data.user };
     }
 
@@ -325,7 +321,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ===== Background Stats Refresh (popup display only) =====
-async function refreshStatsBackground() {
+const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function refreshStatsBackground(forceRefresh = false) {
   try {
     if (!authToken) {
       const stored = await chrome.storage.local.get(['authToken']);
@@ -333,11 +331,23 @@ async function refreshStatsBackground() {
     }
     if (!authToken) return;
 
+    // Check TTL cache — skip API if data is still fresh
+    if (!forceRefresh) {
+      const cached = await chrome.storage.local.get(['statsCacheTime']);
+      if (cached.statsCacheTime && (Date.now() - cached.statsCacheTime) < STATS_CACHE_TTL) {
+        const stored = await chrome.storage.local.get(['userStats']);
+        if (stored.userStats) {
+          chrome.runtime.sendMessage({ action: 'statsUpdated', stats: stored.userStats }).catch(() => {});
+          return; // Use cached data, skip API call
+        }
+      }
+    }
+
     const data = await apiRequest('/get-stats');
     if (data.success) {
       const stored = await chrome.storage.local.get(['userStats']);
-      const updatedStats = { ...(stored.userStats || {}), mediaUploadEnabled: data.stats.mediaUploadEnabled ?? false };
-      await chrome.storage.local.set({ userStats: updatedStats });
+      const updatedStats = { ...(stored.userStats || {}), ...data.stats, mediaUploadEnabled: data.stats.mediaUploadEnabled ?? false };
+      await chrome.storage.local.set({ userStats: updatedStats, statsCacheTime: Date.now() });
       chrome.runtime.sendMessage({ action: 'statsUpdated', stats: data.stats }).catch(() => {});
     }
   } catch (e) {
@@ -703,8 +713,6 @@ chrome.runtime.onStartup.addListener(async () => {
 
   if (data.authToken) {
     authToken = data.authToken;
-    chrome.alarms.create('statsRefresh', { periodInMinutes: 1 });
-    refreshStatsBackground();
   }
 
   if (data.isRunning && data.queue) {
@@ -738,27 +746,36 @@ chrome.runtime.onInstalled.addListener(async () => {
   const data = await chrome.storage.local.get(['authToken']);
   if (data.authToken) {
     authToken = data.authToken;
-    chrome.alarms.create('statsRefresh', { periodInMinutes: 1 });
-    refreshStatsBackground();
   }
 });
 
 // ===== KEEP-ALIVE MECHANISM (Prevents service worker hibernation) =====
-// This maintains a persistent port connection from popup to keep service worker active
+// Keep-alive pings and stats refresh ONLY active when popup is open
 const portConnections = new Set();
 
 chrome.runtime.onConnect.addListener((port) => {
   console.log('[Background] Port connected:', port.name);
   portConnections.add(port);
 
+  // Popup just opened — start stats refresh alarm (5 min interval)
+  if (portConnections.size === 1 && authToken) {
+    chrome.alarms.create('statsRefresh', { periodInMinutes: 5 });
+    refreshStatsBackground(); // Fetch immediately on popup open (respects TTL cache)
+  }
+
   port.onDisconnect.addListener(() => {
     console.log('[Background] Port disconnected:', port.name);
     portConnections.delete(port);
+
+    // Popup closed — stop stats refresh alarm if queue not running
+    if (portConnections.size === 0 && !isRunning) {
+      chrome.alarms.clear('statsRefresh');
+      console.log('[Background] Popup closed — stats refresh stopped');
+    }
   });
 
   port.onMessage.addListener((msg) => {
     if (msg.type === 'keepalive') {
-      console.log('[Background] Keep-alive ping received');
       port.postMessage({ type: 'keepalive-ack', status: 'alive' });
     }
   });
@@ -767,10 +784,9 @@ chrome.runtime.onConnect.addListener((port) => {
   port.postMessage({ type: 'connect-ack', ready: true });
 });
 
-// Send keep-alive pings to all connected ports every 3 minutes
+// Send keep-alive pings to all connected ports every 3 minutes (only if popup open)
 setInterval(() => {
   if (portConnections.size > 0) {
-    console.log('[Background] Sending keep-alive pings to', portConnections.size, 'port(s)');
     portConnections.forEach(port => {
       try {
         port.postMessage({ type: 'background-ping' });
