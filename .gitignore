@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment & secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+backend/.env
+super-admin/config/admin-config.js
+
+# Supabase
+.supabase/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+build/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# Competitor extension files (not your source code)
+heogilejknffekkbjdjmoamaehdblmnc/
+pggchepbleikpkhffahfabfeodghbafd/

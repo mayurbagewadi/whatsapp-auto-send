@@ -1,0 +1,28 @@
+⚠️ IMPORTANT: Icons Required Before Loading Extension
+
+You need to add 3 PNG icon files in the icons/ folder:
+
+Required files:
+  icons/icon16.png   (16x16 pixels)
+  icons/icon48.png   (48x48 pixels)
+  icons/icon128.png  (128x128 pixels)
+
+Quick Solution:
+1. Visit: https://favicon.io/favicon-generator/
+2. Settings:
+   - Text: WA
+   - Background: #25D366 (WhatsApp green)
+   - Font: Bold
+3. Click "Download"
+4. Extract the ZIP
+5. Rename and copy:
+   - favicon-16x16.png → icons/icon16.png
+   - favicon-32x32.png → icons/icon48.png (resize to 48x48 if needed)
+   - android-chrome-192x192.png → icons/icon128.png (resize to 128x128)
+
+Alternative:
+- Use any PNG image (WhatsApp logo, phone icon, etc.)
+- Resize to 128x128, 48x48, 16x16
+- Save in icons/ folder with exact names above
+
+Without icons, Chrome will show an error when loading the extension.
