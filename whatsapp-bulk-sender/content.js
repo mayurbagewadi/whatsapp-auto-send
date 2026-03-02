@@ -1,14 +1,12 @@
 // ===== WhatsApp Bulk Sender - Content Script (IPC Orchestrator) =====
 // Role: Bridge between background.js and page.js with command coordination
 
-console.log('[Content] Initializing IPC orchestrator');
 
 // ===== Inject page.js into MAIN world =====
 (function injectPageScript() {
   const script = document.createElement('script');
   script.src = chrome.runtime.getURL('page.js');
   script.onload = function() {
-    console.log('[Content] page.js injected');
     this.remove();
   };
   (document.head || document.documentElement).appendChild(script);
@@ -25,7 +23,6 @@ let injectReady = false;
 
 window.addEventListener('wa-bulk-sender:inject-ready', (event) => {
   injectReady = true;
-  console.log('[Content] injected.js ready — Store:', event.detail.storeKeys?.join(', '));
 });
 
 window.addEventListener('wa-bulk-sender:inject-result', (event) => {
@@ -111,7 +108,6 @@ function checkWhatsAppStatus() {
 // Reference: backup/content.js — clicks wa.me link from inside the page so
 // WhatsApp's own click handler intercepts it and navigates internally.
 async function openChatViaWaMe(number, message) {
-  console.log(`[Content] Opening chat for ${number} via wa.me anchor...`);
 
   const cleanNumber = number.replace(/\D/g, '');
   const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
@@ -143,7 +139,6 @@ async function openChatViaWaMe(number, message) {
   await new Promise(r => setTimeout(r, 100));
   link.click();
 
-  console.log('[Content] wa.me anchor clicked, waiting for WhatsApp to navigate...');
 
   // Wait for WhatsApp's internal navigation to complete
   await new Promise(r => setTimeout(r, 1500));
@@ -166,35 +161,29 @@ async function openChatViaWaMe(number, message) {
 
   // Allow chat UI to fully settle before send button check
   await new Promise(r => setTimeout(r, 1500));
-  console.log(`[Content] Chat ready for ${number}`);
 }
 
 // ===== Orchestrated Send Message Flow =====
 async function orchestrateSendMessage(number, message, media = null) {
   try {
-    console.log(`[Content] Starting send to ${number}${media ? ' (with media)' : ''}`);
 
     if (media) {
       // ── Media send: use DOM approach (SheetWA method) ──────────────────
       // Step 1: Open chat and pre-fill text via wa.me (same as text-only)
-      console.log('[Content] Step 1: Opening chat and pre-filling text...');
       await openChatViaWaMe(number, message);
 
       // Step 2: Wait for chat to be ready
-      console.log('[Content] Step 2: Waiting for chat to be ready...');
       let chatReady = false;
       for (let attempt = 0; attempt < 10; attempt++) {
         try {
           const findResult = await executeCommand('findChatInput', {}, 3000);
           if (findResult.found) {
             chatReady = true;
-            console.log('[Content] ✅ Chat ready - input found');
             break;
           }
         } catch (e) {
           // Timeout expected while waiting
         }
-        console.log(`[Content] Chat not ready (attempt ${attempt + 1}/10), waiting...`);
         await new Promise(r => setTimeout(r, 1000));
       }
 
@@ -203,7 +192,6 @@ async function orchestrateSendMessage(number, message, media = null) {
       }
 
       // Step 3: Send media (text already in input from wa.me)
-      console.log('[Content] Step 3: Sending media via DOM attachment method...');
       const sendResult = await executeCommand('sendWithMedia', {
         base64:   media.base64,
         type:     media.type,
@@ -218,20 +206,17 @@ async function orchestrateSendMessage(number, message, media = null) {
       // ── Text send: existing wa.me + button click approach (works reliably) ──
       await openChatViaWaMe(number, message);
 
-      console.log('[Content] Step 1: Waiting for send button...');
       let pageReady = false;
       for (let attempt = 0; attempt < 10; attempt++) {
         try {
           const findResult = await executeCommand('findSendBtn', {}, 3000);
           if (findResult.found) {
             pageReady = true;
-            console.log('[Content] ✅ Page ready - send button found');
             break;
           }
         } catch (e) {
           // Timeout expected while waiting
         }
-        console.log(`[Content] Page not ready (attempt ${attempt + 1}/10), waiting...`);
         await new Promise(r => setTimeout(r, 1000));
       }
 
@@ -239,17 +224,14 @@ async function orchestrateSendMessage(number, message, media = null) {
         throw new Error('Chat page did not load - send button not found');
       }
 
-      console.log('[Content] Step 2: Clicking send button...');
       const sendResult = await executeCommand('clickSendButton', {}, 35000);
 
       if (!sendResult.success) {
         throw new Error('Send button click failed: ' + sendResult.error);
       }
 
-      console.log(`[Content]   Confirmation method: ${sendResult.method}`);
     }
 
-    console.log(`[Content] ✅ Message sent to ${number}`);
 
     chrome.runtime.sendMessage({
       action: 'messageSent',
@@ -259,7 +241,6 @@ async function orchestrateSendMessage(number, message, media = null) {
     return { success: true };
 
   } catch (error) {
-    console.error(`[Content] ❌ Failed to send to ${number}: ${error.message}`);
 
     chrome.runtime.sendMessage({
       action: 'messageFailed',
@@ -272,7 +253,6 @@ async function orchestrateSendMessage(number, message, media = null) {
 
 // ===== Message Listener from Background =====
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(`[Content] Received: ${request.action}`);
 
   if (request.action === 'checkStatus') {
     const status = checkWhatsAppStatus();
@@ -298,7 +278,6 @@ async function loadSelectors() {
   return new Promise(resolve => {
     chrome.storage.local.get(['selectors'], (data) => {
       if (data.selectors) {
-        console.log('[Content] Forwarding selectors to page.js');
         window.dispatchEvent(new CustomEvent('wa-bulk-sender:update-selectors', {
           detail: { selectors: data.selectors }
         }));
@@ -311,7 +290,6 @@ async function loadSelectors() {
 // ===== Listen for Selector Updates =====
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.selectors) {
-    console.log('[Content] Selectors updated, forwarding...');
     window.dispatchEvent(new CustomEvent('wa-bulk-sender:update-selectors', {
       detail: { selectors: changes.selectors.newValue }
     }));
@@ -331,7 +309,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 
   if (ready) {
-    console.log('[Content] WhatsApp ready, notifying background...');
     chrome.runtime.sendMessage({ action: 'whatsappReady' }).catch(() => {});
 
     // Load selectors
@@ -339,4 +316,3 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 })();
 
-console.log('[Content] IPC orchestrator ready');

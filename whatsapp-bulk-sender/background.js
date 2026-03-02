@@ -34,10 +34,8 @@ async function apiRequest(endpoint, options = {}) {
       tokenType = p.userId ? `USER_JWT (userId=${p.userId}, exp=${new Date(p.exp*1000).toISOString()})` : `UNKNOWN_JWT (keys=${Object.keys(p).join(',')})`;
     } catch(e) { tokenType = 'DECODE_FAILED'; }
   }
-  console.log(`[API] ${endpoint} | tokenType: ${tokenType}`);
   const response = await fetch(`${SUPABASE_URL}/functions/v1${endpoint}`, { ...options, headers });
   const text = await response.text();
-  console.log(`[API] ${endpoint} → HTTP ${response.status} | body: ${text}`);
 
   // Token rejected by server — clear it and force re-login
   if (response.status === 401) {
@@ -73,7 +71,6 @@ async function signup(email, phone, password, company_name) {
 
     return { success: false, error: data.error || 'Signup failed' };
   } catch (e) {
-    console.error('[Background] Signup error:', e);
     return { success: false, error: 'Cannot connect to server.' };
   }
 }
@@ -97,7 +94,6 @@ async function login(email, password) {
 
     return { success: false, error: data.error || 'Invalid credentials' };
   } catch (e) {
-    console.error('[Background] Login error:', e);
     return { success: false, error: 'Cannot connect to server.' };
   }
 }
@@ -116,10 +112,8 @@ async function fetchSelectors() {
     const data = await apiRequest('/get-selectors');
     if (data.success && data.selectors) {
       await chrome.storage.local.set({ selectors: data.selectors, selectorsVersion: data.version });
-      console.log('[Background] Selectors updated from Supabase');
     }
   } catch (e) {
-    console.warn('[Background] Could not fetch selectors, using cached:', e.message);
   }
 }
 
@@ -133,7 +127,6 @@ async function trackEvent(eventType, extraData = {}) {
       body: JSON.stringify({ eventType, ...extraData })
     });
   } catch (e) {
-    console.warn('[Background] Tracking failed (non-fatal):', e.message);
   }
 }
 
@@ -146,12 +139,9 @@ async function restoreAuth() {
       // Decode payload to confirm what token is stored
       try {
         const payload = JSON.parse(atob(authToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-        console.log('[restoreAuth] token payload:', JSON.stringify(payload));
       } catch (e) {
-        console.error('[restoreAuth] failed to decode token payload:', e.message);
       }
     } else {
-      console.warn('[restoreAuth] no authToken found in storage');
     }
   }
 }
@@ -160,23 +150,19 @@ async function restoreAuth() {
 async function checkMessageLimitFromAPI() {
   await restoreAuth();
   if (!authToken) {
-    console.error('[Limit] No authToken in memory');
     return { allowed: false, error: 'Not authenticated.' };
   }
 
   try {
     const data = await apiRequest('/get-stats');
-    console.log('[Limit] /get-stats response:', JSON.stringify(data));
 
     if (!data.success) {
-      console.error('[Limit] API returned success:false —', data.error);
       return { allowed: false, error: data.error || 'Could not verify plan limit. Please try again.' };
     }
 
     const limit     = data.stats.messagesLimit     ?? 10;
     const sent      = data.stats.messagesSentToday ?? 0;
     const remaining = Math.max(0, limit - sent);
-    console.log(`[Limit] plan=${data.stats.plan} limit=${limit} sent=${sent} remaining=${remaining}`);
 
     if (remaining <= 0) {
       return { allowed: false, error: `Daily limit reached (${limit} messages/day). Resets tomorrow.` };
@@ -184,14 +170,12 @@ async function checkMessageLimitFromAPI() {
     return { allowed: true, remaining };
 
   } catch (e) {
-    console.error('[Limit] apiRequest threw:', e.message);
     return { allowed: false, error: 'Could not verify plan limit. Please try again.' };
   }
 }
 
 // ===== Message Listener =====
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('[Background] Received message:', request.action);
 
   if (request.action === 'signup') {
     signup(request.data.email, request.data.phone, request.data.password, request.data.company_name).then(sendResponse);
@@ -279,7 +263,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: false });
         }
       } catch (e) {
-        console.warn('[Background] refreshStats failed:', e.message);
         sendResponse({ success: false });
       }
     })();
@@ -374,7 +357,6 @@ async function handleStartQueue(data, sendResponse) {
     const stored = await chrome.storage.local.get(['authToken']);
     if (stored.authToken) authToken = stored.authToken;
   }
-  console.log('[startQueue] authToken after restore:', authToken ? `SET (starts: ${authToken.slice(0, 20)}...)` : 'NULL — not in storage');
 
   // Check message limit before starting
   const limitCheck = await checkMessageLimitFromAPI();
@@ -387,7 +369,6 @@ async function handleStartQueue(data, sendResponse) {
   let queueData = data.queue;
   if (limitCheck.remaining != null && queueData.length > limitCheck.remaining) {
     queueData = queueData.slice(0, limitCheck.remaining);
-    console.log(`[Background] Queue capped at ${limitCheck.remaining} (daily limit)`);
   }
 
   queue = queueData;
@@ -418,7 +399,6 @@ async function handleStartQueue(data, sendResponse) {
       await chrome.storage.local.set(mediaMap);
     }
   } catch (e) {
-    console.error('[Background] Storage quota exceeded:', e.message);
     // Fallback: store without queue data
     await chrome.storage.local.set({ currentIndex, isRunning, delaySec, randomize, stats });
     throw new Error('Storage quota exceeded. Clear cache and retry.');
@@ -489,7 +469,6 @@ async function sendNextMessage() {
   // Restore auth + queue state — service worker may have restarted since last alarm
   await restoreAuth();
   if (!authToken) {
-    console.error('[sendNext] No authToken after restore — aborting');
     isRunning = false;
     return;
   }
@@ -520,7 +499,6 @@ async function sendNextMessage() {
   if (!whatsappTabId) {
     const tabs = await chrome.tabs.query({ url: 'https://web.whatsapp.com/*' });
     if (tabs.length === 0) {
-      console.error('[sendNext] WhatsApp Web tab not found');
       isRunning = false;
       chrome.storage.local.set({ isRunning: false });
       return;
@@ -538,7 +516,6 @@ async function sendNextMessage() {
   // Per-message limit check — fetch directly from Supabase (always realtime, no cache)
   try {
     const liveStats = await apiRequest('/get-stats');
-    console.log('[sendNext] live stats:', JSON.stringify(liveStats));
     if (liveStats.success) {
       chrome.runtime.sendMessage({ action: 'statsUpdated', stats: liveStats.stats }).catch(() => {});
       const limit = liveStats.stats.messagesLimit ?? 10;
@@ -553,14 +530,11 @@ async function sendNextMessage() {
         return;
       }
     } else {
-      console.error('[sendNext] /get-stats failed:', liveStats.error);
     }
   } catch (e) {
-    console.error('[sendNext] Live limit check threw:', e.message);
   }
 
   const item = queue[currentIndex];
-  console.log(`[Background] Sending message ${currentIndex + 1}/${queue.length} to ${item.number}`);
 
   currentIndex++;
   await chrome.storage.local.set({ currentIndex });
@@ -660,7 +634,6 @@ function finishQueue() {
 
     if (keysToDelete.length > 0) {
       await chrome.storage.local.remove(keysToDelete);
-      console.log(`[Background] Cleaned up ${keysToDelete.length} media items`);
     }
 
     queue = [];
@@ -692,10 +665,8 @@ async function cleanupOldMediaData() {
     const orphanedMedia = mediaKeys.filter(k => !activeMediaIds.has(k));
     if (orphanedMedia.length > 0) {
       await chrome.storage.local.remove(orphanedMedia);
-      console.log(`[Background] Cleaned ${orphanedMedia.length} orphaned media items`);
     }
   } catch (e) {
-    console.error('[Background] Media cleanup failed:', e.message);
   }
 }
 
@@ -755,7 +726,6 @@ chrome.runtime.onInstalled.addListener(async () => {
 const portConnections = new Set();
 
 chrome.runtime.onConnect.addListener((port) => {
-  console.log('[Background] Port connected:', port.name);
   portConnections.add(port);
 
   // Popup just opened — start stats refresh alarm (5 min interval)
@@ -765,13 +735,11 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 
   port.onDisconnect.addListener(() => {
-    console.log('[Background] Port disconnected:', port.name);
     portConnections.delete(port);
 
     // Popup closed — stop stats refresh alarm if queue not running
     if (portConnections.size === 0 && !isRunning) {
       chrome.alarms.clear('statsRefresh');
-      console.log('[Background] Popup closed — stats refresh stopped');
     }
   });
 
@@ -792,10 +760,8 @@ setInterval(() => {
       try {
         port.postMessage({ type: 'background-ping' });
       } catch (e) {
-        console.warn('[Background] Failed to send ping to port:', e.message);
       }
     });
   }
 }, 180000); // 3 minutes
 
-console.log('[Background] Service worker loaded with keep-alive mechanism');

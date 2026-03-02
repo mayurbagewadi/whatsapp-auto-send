@@ -81,7 +81,6 @@ class MediaManager {
 
       return await response.json();
     } catch (error) {
-      console.error('Get quota error:', error);
       throw error;
     }
   }
@@ -108,7 +107,6 @@ class MediaManager {
         },
       };
     } catch (error) {
-      console.error('Validate upload error:', error);
       throw error;
     }
   }
@@ -157,7 +155,6 @@ class MediaManager {
         xhr.send(file);
       });
     } catch (error) {
-      console.error('Upload to storage error:', error);
       throw error;
     }
   }
@@ -205,7 +202,6 @@ class MediaManager {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     } catch (error) {
-      console.error('Hash calculation error:', error);
       return null;
     }
   }
@@ -244,7 +240,6 @@ class MediaManager {
 
       return await response.json();
     } catch (error) {
-      console.error('Process upload error:', error);
       throw error;
     }
   }
@@ -291,7 +286,6 @@ class MediaManager {
         quotaStatus,
       };
     } catch (error) {
-      console.error('Upload media error:', error);
       throw error;
     }
   }
@@ -324,7 +318,6 @@ class MediaManager {
 
       return await response.json();
     } catch (error) {
-      console.error('Delete media error:', error);
       throw error;
     }
   }
@@ -363,7 +356,6 @@ class MediaManager {
         quotaStatus,
       };
     } catch (error) {
-      console.error('Can upload check error:', error);
       return {
         allowed: false,
         reason: 'Failed to check quota',

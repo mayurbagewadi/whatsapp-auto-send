@@ -1,17 +1,13 @@
 // ===== GLOBAL ERROR HANDLERS (MUST BE FIRST) =====
 window.addEventListener('error', (e) => {
-  console.error('[Popup ERROR]', e.message, e.filename, e.lineno);
   // Don't override DOM on error - just log it
 });
 
 window.addEventListener('unhandledrejection', (e) => {
-  console.error('[Popup REJECTION]', e.reason);
   // Don't override DOM on rejection - just log it
 });
 
 // ===== DOM Elements =====
-console.log('[Popup] ====== POPUP INITIALIZATION START ======');
-console.log('[Popup] timestamp:', new Date().toISOString());
 
 const authScreen = document.getElementById('authScreen');
 const signupTab = document.getElementById('signupTab');
@@ -43,7 +39,6 @@ const progressBar = document.getElementById('progressBar');
 const countdownEl = document.getElementById('countdown');
 const statusMessage = document.getElementById('statusMessage');
 
-console.log('[Popup] DOM elements initialized - authScreen exists:', !!authScreen, 'mainContent exists:', !!mainContent);
 
 // ===== Initialize =====
 let isRunning = false;
@@ -61,7 +56,6 @@ let logPrevSent   = 0;
 let logPrevFailed = 0;
 
 // ===== IMPROVED INITIALIZATION WITH KEEP-ALIVE =====
-console.log('[Popup] Setting up keep-alive connection to service worker...');
 
 // Create persistent port connection to keep service worker alive
 let keepAlivePort = null;
@@ -70,18 +64,14 @@ let keepAliveInterval = null;
 function setupKeepAlive() {
   try {
     keepAlivePort = chrome.runtime.connect({ name: 'popup-keepalive' });
-    console.log('[Popup] ✓ Keep-alive port established');
 
     keepAlivePort.onMessage.addListener((msg) => {
       if (msg.type === 'connect-ack') {
-        console.log('[Popup] ✓ Service worker acknowledged connection');
       } else if (msg.type === 'keepalive-ack') {
-        console.log('[Popup] ✓ Keep-alive confirmed - service worker is responsive');
       }
     });
 
     keepAlivePort.onDisconnect.addListener(() => {
-      console.warn('[Popup] Keep-alive port disconnected, attempting to reconnect...');
       clearInterval(keepAliveInterval);
       setTimeout(setupKeepAlive, 1000);
     });
@@ -92,13 +82,11 @@ function setupKeepAlive() {
         try {
           keepAlivePort.postMessage({ type: 'keepalive' });
         } catch (e) {
-          console.warn('[Popup] Keep-alive ping failed:', e.message);
         }
       }
     }, 30000); // Every 30 seconds
 
   } catch (e) {
-    console.error('[Popup] Keep-alive port setup failed:', e.message);
   }
 }
 
@@ -111,7 +99,6 @@ window.addEventListener('beforeunload', () => {
   if (keepAlivePort) {
     try {
       keepAlivePort.disconnect();
-      console.log('[Popup] Keep-alive port disconnected');
     } catch (e) {}
   }
 });
@@ -121,9 +108,7 @@ if (authScreen) {
   authScreen.style.display = 'flex';
   authScreen.style.visibility = 'visible';
   authScreen.style.opacity = '1';
-  console.log('[Popup] Auth screen shown immediately');
 } else {
-  console.error('[Popup] CRITICAL: authScreen element not found in DOM!');
   document.body.innerHTML = '<div style="padding: 20px; color: red; font-family: sans-serif;"><strong>❌ CRITICAL ERROR</strong><br>Auth screen element missing from DOM</div>';
 }
 
@@ -132,7 +117,6 @@ let safeguardTriggered = false;
 setTimeout(() => {
   if (!safeguardTriggered && authScreen && authScreen.style.display !== 'flex') {
     safeguardTriggered = true;
-    console.warn('[Popup] SAFEGUARD: Auth screen not visible, forcing display');
     authScreen.style.display = 'flex';
     authScreen.style.visibility = 'visible';
     authScreen.style.opacity = '1';
@@ -144,13 +128,11 @@ async function initMediaManager(token) {
   if (!token || typeof SUPABASE_CONFIG === 'undefined' || mediaManager) return;
   try {
     mediaManager = new MediaManager(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.ANON_KEY, token);
-    console.log('[Popup] MediaManager initialized');
     const mediaBtn = document.getElementById('mediaButton');
     if (mediaBtn) mediaBtn.addEventListener('click', handleMediaButtonClick);
     const mediaInput = document.getElementById('mediaInput');
     if (mediaInput) mediaInput.addEventListener('change', handleMediaFileSelect);
   } catch (error) {
-    console.error('[Popup] MediaManager initialization error:', error.message);
     // Non-fatal — popup still works without media manager
   }
 }
@@ -158,7 +140,6 @@ async function initMediaManager(token) {
 document.addEventListener('DOMContentLoaded', async () => {
   const { authToken } = await chrome.storage.local.get('authToken');
   if (!authToken) {
-    console.warn('[Popup] No auth token — media manager not initialized');
     return;
   }
   await initMediaManager(authToken);
@@ -208,9 +189,7 @@ async function handleMediaFileSelect(e) {
     displayMediaInUI();
     document.getElementById('statusText').textContent = '✅ Ready to send';
 
-    console.log('Media uploaded:', result.mediaId);
   } catch (error) {
-    console.error('Upload error:', error);
     const errorMsg = error.error || error.message || 'Upload failed';
     alert('❌ ' + errorMsg);
     currentMedia = null; // Clear stale media so it isn't sent on failure
@@ -227,7 +206,6 @@ function displayMediaInUI() {
   const icon = mediaManager.isImage(currentMedia.type) ? '📷' :
                mediaManager.isVideo(currentMedia.type) ? '🎥' : '📄';
 
-  console.log(`Media attached: ${icon} ${currentMedia.fileName}`);
 }
 // ===== END MEDIA MANAGER =====
 
@@ -634,12 +612,9 @@ chrome.storage.local.get(['savedPhones', 'savedMessage', 'savedDelay', 'savedCou
 
 // ===== Auth Check =====
 // Check authentication first, then WhatsApp connection
-console.log('[Popup] ====== STARTING AUTH CHECK ======');
 try {
   checkAuthAndInit();
-  console.log('[Popup] Auth check initiated successfully');
 } catch (error) {
-  console.error('[Popup] ❌ FATAL: Auth check crashed:', error.message, error.stack);
   showAuthScreen();
 }
 
@@ -648,14 +623,11 @@ function checkAuthAndInit() {
   let retryCount = 0;
   const maxRetries = 3;
 
-  console.log('[Popup] checkAuthAndInit() called at', new Date().toISOString());
 
   // Ensure at least the auth screen is shown
   if (authScreen) {
-    console.log('[Popup] ✓ authScreen element exists, showing it');
     showAuthScreen();
   } else {
-    console.error('[Popup] ❌ CRITICAL: authScreen element not found in DOM');
     document.body.innerHTML = '<div style="padding: 20px; color: red; font-family: sans-serif;">❌ Extension error: UI elements not loaded. Please reload the extension.</div>';
     return;
   }
@@ -665,21 +637,17 @@ function checkAuthAndInit() {
     let responded = false;
     const attemptStartTime = Date.now();
 
-    console.log(`[Popup] Auth check attempt ${attemptNum}/${maxRetries + 1}`);
 
     const timeout = setTimeout(() => {
       if (!responded) {
         const elapsed = Date.now() - attemptStartTime;
-        console.warn(`[Popup] ⚠️ Attempt ${attemptNum} timeout after ${elapsed}ms`);
 
         if (attemptNum < maxRetries) {
           // Retry with backoff
           const waitTime = attemptNum * 500; // 500ms, 1000ms, 1500ms
-          console.log(`[Popup] Retrying in ${waitTime}ms...`);
           setTimeout(() => attemptAuthCheck(attemptNum + 1), waitTime);
         } else {
           // Max retries reached — show auth screen and give up
-          console.error('[Popup] ❌ Auth check failed after', maxRetries, 'retries');
           if (authScreen) {
             authScreen.style.display = 'flex';
           }
@@ -692,24 +660,20 @@ function checkAuthAndInit() {
     }, 5000); // 5 second timeout per attempt
 
     try {
-      console.log(`[Popup] → Sending getAuthStatus (attempt ${attemptNum})`);
       chrome.runtime.sendMessage({ action: 'getAuthStatus' }, (response) => {
         responded = true;
         const elapsed = Date.now() - attemptStartTime;
         clearTimeout(timeout);
 
-        console.log(`[Popup] ← Received response after ${elapsed}ms:`, {
           authenticated: response?.authenticated,
           hasToken: !!response?.token,
           attempt: attemptNum
         });
 
         if (chrome.runtime.lastError) {
-          console.error('[Popup] ❌ chrome.runtime.lastError:', chrome.runtime.lastError.message);
 
           if (attemptNum < maxRetries) {
             const waitTime = attemptNum * 500;
-            console.log(`[Popup] Retrying in ${waitTime}ms due to runtime error...`);
             setTimeout(() => attemptAuthCheck(attemptNum + 1), waitTime);
           } else {
             if (authScreen) authScreen.style.display = 'flex';
@@ -718,11 +682,9 @@ function checkAuthAndInit() {
         }
 
         if (!response) {
-          console.error('[Popup] ❌ Response is null/undefined');
 
           if (attemptNum < maxRetries) {
             const waitTime = attemptNum * 500;
-            console.log(`[Popup] Retrying in ${waitTime}ms due to null response...`);
             setTimeout(() => attemptAuthCheck(attemptNum + 1), waitTime);
           } else {
             if (authScreen) authScreen.style.display = 'flex';
@@ -734,26 +696,21 @@ function checkAuthAndInit() {
         safeguardTriggered = true;
         if (response.authenticated) {
           // Authenticated — show WhatsApp check
-          console.log('[Popup] ✓ User authenticated, showing main content');
           showPlanInfo(response.stats);
           try {
             checkWhatsAppConnection();
             setInterval(checkWhatsAppConnection, 3000);
           } catch (e) {
-            console.error('[Popup] Error in checkWhatsAppConnection:', e.message);
           }
         } else {
           // Not authenticated — auth screen already visible
-          console.log('[Popup] ℹ️ User not authenticated, auth screen visible');
         }
       });
     } catch (error) {
       clearTimeout(timeout);
-      console.error(`[Popup] ❌ Auth check attempt ${attemptNum} failed:`, error.message);
 
       if (attemptNum < maxRetries) {
         const waitTime = attemptNum * 500;
-        console.log(`[Popup] Retrying in ${waitTime}ms due to exception...`);
         setTimeout(() => attemptAuthCheck(attemptNum + 1), waitTime);
       } else {
         if (authScreen) authScreen.style.display = 'flex';
@@ -764,7 +721,6 @@ function checkAuthAndInit() {
   // Start first attempt
   attemptAuthCheck(1);
 
-  console.log('[Popup] checkAuthAndInit() setup complete, starting retry loop...');
 }
 
 function showAuthScreen() {
@@ -1675,8 +1631,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ===== INITIALIZATION COMPLETE =====
-console.log('[Popup] ====== POPUP INITIALIZATION COMPLETE ======');
-console.log('[Popup] Script loaded successfully at', new Date().toISOString());
-console.log('[Popup] authScreen exists:', !!authScreen);
-console.log('[Popup] mainContent exists:', !!mainContent);
-console.log('[Popup] Waiting for service worker response...');
