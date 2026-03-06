@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://wasappbulk.github.io/sitemap.xml
